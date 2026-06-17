@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Local dev tooling / preview server (machine-specific paths)
+.claude/
+
+# Dependencies
+node_modules/
