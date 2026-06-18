@@ -37,7 +37,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.95;
 
-const cameraFrustum = 10.4;
+const cameraFrustum = 22.9;        // ~10% smaller mark than 20.8
+const MARK_OFFSET_Y = 1.4;         // raise the mark a bit above center (world units)
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 camera.position.set(0, 0, 10);
 
@@ -66,12 +67,13 @@ grid.position.z = -3;
 scene.add(grid);
 
 const haze = createPurpleHaze();
-haze.position.z = -0.5;
+haze.position.set(0, MARK_OFFSET_Y, -0.5);
 scene.add(haze);
 
 // Pose rig: an outer group leans the whole figure in screen space (roll), an
 // inner rig pitches it down and spins it around its vertical axis.
 const tiltGroup = new THREE.Group();
+tiltGroup.position.y = MARK_OFFSET_Y;
 scene.add(tiltGroup);
 const spinRig = new THREE.Group();
 tiltGroup.add(spinRig);
@@ -95,6 +97,7 @@ const pickSphere = new THREE.Mesh(
   new THREE.SphereGeometry(PICK_RADIUS, 16, 12),
   new THREE.MeshBasicMaterial({ visible: false }),
 );
+pickSphere.position.y = MARK_OFFSET_Y;
 scene.add(pickSphere);
 
 const calmDuration = 2;
@@ -399,20 +402,17 @@ function animate() {
   spinRig.rotation.y = spinAngle;
   spinRig.scale.setScalar((1 + breathing) * THREE.MathUtils.lerp(1, 0.86, logoPose));
 
-  // Glow is identical and constant for the single cube and the "S" (no morph
-  // dependence). It only FLUCTUATES with spin speed: calm on the holds, flaring
-  // and shimmering during the fast morph whirl.
+  // Glow is constant for the ENTIRE animation, with only a brief, very subtle
+  // lift while it whirls (spin speed peaks for an instant during each morph).
   const spinSpeed = Math.abs(spinAngle - prevSpinAngle) / Math.max(dt, 1e-4);
   prevSpinAngle = spinAngle;
-  const spinPulse = THREE.MathUtils.clamp((spinSpeed - 0.6) * 0.12, 0, 1)
-    * (1 + Math.sin(elapsed * 9) * 0.35);
-  const microPulse = Math.sin(elapsed * 1.3) * 0.03;
-  coreLines.material.opacity = 0.85 + microPulse + spinPulse * 0.06;
-  glowLines.material.opacity = 0.4 + spinPulse * 0.24;
-  auraLines.material.opacity = 0.1 + spinPulse * 0.08;
-  haze.material.opacity = 0.1 + spinPulse * 0.05;
+  const spinPulse = THREE.MathUtils.clamp(spinSpeed / 10, 0, 1);
+  coreLines.material.opacity = 0.85;
+  glowLines.material.opacity = 0.34 + spinPulse * 0.04;
+  auraLines.material.opacity = 0.06 + spinPulse * 0.015;
+  haze.material.opacity = 0.08 + spinPulse * 0.012;
   grid.material.opacity = 0.045;
-  bloomPass.strength = 0.52 + spinPulse * 0.42;
+  bloomPass.strength = 0.4 + spinPulse * 0.06;
 
   composer.render();
 }
@@ -483,7 +483,7 @@ function resize() {
   const height = window.innerHeight;
 
   const aspect = width / height;
-  const frustum = width < 700 ? 12.9 : cameraFrustum;
+  const frustum = width < 700 ? 28.4 : cameraFrustum;
 
   camera.left = (-frustum * aspect) / 2;
   camera.right = (frustum * aspect) / 2;

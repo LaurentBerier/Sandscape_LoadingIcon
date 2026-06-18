@@ -42,10 +42,108 @@ body::after {
   content: "";
   position: fixed;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
   background: radial-gradient(
     ellipse at center,
     rgba(0, 0, 0, 0) 52%,
     rgba(0, 0, 0, 0.55) 100%
   );
+}
+
+/* --- Loading readout: the word + a neon wireframe progress box ----------- */
+#loader-ui {
+  position: fixed;
+  top: 52%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  pointer-events: none;
+  user-select: none;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: opacity 0.7s ease;
+}
+
+#loading-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em; /* balance the trailing letter-spacing so it stays centered */
+  text-transform: uppercase;
+  color: #ece0ff;
+  text-shadow: 0 0 6px rgba(190, 130, 255, 0.9), 0 0 16px rgba(124, 58, 237, 0.55);
+}
+
+/* animated trailing dots; zero-width so they don't shift the centered word */
+#loading-label::after {
+  content: "";
+  display: inline-block;
+  width: 0;
+  animation: loading-dots 1.6s steps(1, end) infinite;
+}
+
+@keyframes loading-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
+}
+
+#progress-box {
+  position: relative;
+  width: min(64vw, 300px);
+  height: 13px;
+  border: 1px solid rgba(176, 124, 255, 0.5);
+  border-radius: 2px;
+  /* faint internal wireframe "segment ticks" over a dark glass fill */
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent 17px,
+      rgba(168, 110, 255, 0.1) 17px, rgba(168, 110, 255, 0.1) 18px),
+    rgba(120, 60, 255, 0.05);
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.2), inset 0 0 8px rgba(70, 25, 150, 0.3);
+  overflow: hidden; /* keep the white bloom contained within the bar */
+}
+
+#progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  /* the base bar stays "current purple"; white comes from the bloom overlay */
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.85), rgba(176, 120, 255, 1));
+  box-shadow: 0 0 6px rgba(150, 80, 240, 0.5);
+  will-change: width;
+}
+
+/* White bloom riding the leading edge: a blurred white gradient anchored at the
+   tip that grows leftward and brightens with progress (--tip, 0..1, set from
+   loader-ui.js). At 100% a good portion of the bar blooms white, fading to the
+   purple on the left. */
+#progress-fill::after {
+  content: "";
+  position: absolute;
+  top: -85%;
+  bottom: -85%;
+  right: 0;
+  width: calc(14px + var(--tip, 0) * 150px);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(232, 208, 255, calc(0.25 + var(--tip, 0) * 0.3)) 52%,
+    rgba(255, 255, 255, calc(0.62 + var(--tip, 0) * 0.38)) 100%
+  );
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+#progress-percent {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: #b489ff;
+  text-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
 }
