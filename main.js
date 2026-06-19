@@ -22,6 +22,14 @@ const DRAG_PITCH_SENS = 0.006;   // rad per px of vertical drag
 const PICK_RADIUS = 1.85;        // world-space grab radius around the mark
 const fullTurn = Math.PI * 2;
 
+// Re-pose applied ONLY to the stacked figure-8 state (scaled by the morph's
+// logoPose, so the single cube is left exactly as it was). It swings the cubes
+// off corner-on toward the logo's 3/4 "front-face" perspective, then leans the
+// stack so the two boxes read as the Sandscape "S".
+const DOUBLE_YAW_OFFSET = -0.42;   // rad: rotate toward face-on (wide front, narrow side)
+const DOUBLE_PITCH_OFFSET = 0.10;  // rad: ease the downward tilt a touch
+const DOUBLE_ROLL_OFFSET = 0.02;   // rad: keep the stacked cubes upright (cancels the base lean)
+
 const canvas = document.querySelector('#loader-canvas');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x030106);
@@ -81,6 +89,7 @@ tiltGroup.add(spinRig);
 const cubeSize = 1.24;
 const cubeLines = createCubeLines(cubeSize);
 const singleTargets = createSingleCube();
+const stackOffset = new THREE.Vector3(0.34, 0.70, -0.10); // upper cube; lower mirrors it
 const doubleTargets = createDoubleCube();
 const linePositions = new Float32Array(singleTargets);
 let lastMorphAmount = -1;
@@ -186,11 +195,11 @@ function createSingleCube() {
 }
 
 function createDoubleCube() {
-  // Two same-orientation full cubes stepped with a mostly-vertical diagonal
-  // offset — a steep stack with a slight lean. With the hero yaw it reads as the
-  // "S": upper cube up/right -> woven waist -> lower cube down/left.
-  const upperCube = translateEdges(cubeLines, new THREE.Vector3(0.22, 0.68, -0.05));
-  const lowerCube = translateEdges(cubeLines, new THREE.Vector3(-0.22, -0.68, 0.05));
+  // Two same-orientation UPRIGHT cubes stepped along a diagonal so they interlock
+  // at a shared waist and read as the Sandscape "S" / figure-8. The cubes keep the
+  // reference's 3/4 pose; the stack offset (not a tilt) supplies the S.
+  const upperCube = translateEdges(cubeLines, stackOffset);
+  const lowerCube = translateEdges(cubeLines, stackOffset.clone().multiplyScalar(-1));
 
   return [...upperCube, ...lowerCube];
 }
@@ -396,10 +405,12 @@ function animate() {
 
   // Outer group: a touch of screen-space lean (the diagonal offset already
   // supplies most of the figure-8 tilt).
-  tiltGroup.rotation.z = -0.02 - logoPose * 0.14 + Math.sin(elapsed * 0.5) * 0.008;
-  // Inner rig: pitch down to an isometric look + the morph-driven spin.
-  spinRig.rotation.x = THREE.MathUtils.clamp(-0.6 + userPitch + logoPose * 0.05, -1.4, 0.25);
-  spinRig.rotation.y = spinAngle;
+  tiltGroup.rotation.z = -0.02 + Math.sin(elapsed * 0.5) * 0.008 + logoPose * DOUBLE_ROLL_OFFSET;
+  // Inner rig: pitch down to an isometric look + the morph-driven spin. The
+  // DOUBLE_* offsets re-pose only the stacked state (logoPose) into the logo's
+  // 3/4 perspective, leaving the single corner-on cube untouched.
+  spinRig.rotation.x = THREE.MathUtils.clamp(-0.6 + userPitch + logoPose * 0.05 + logoPose * DOUBLE_PITCH_OFFSET, -1.4, 0.25);
+  spinRig.rotation.y = spinAngle + logoPose * DOUBLE_YAW_OFFSET;
   spinRig.scale.setScalar((1 + breathing) * THREE.MathUtils.lerp(1, 0.86, logoPose));
 
   // Glow is constant for the ENTIRE animation, with only a brief, very subtle
