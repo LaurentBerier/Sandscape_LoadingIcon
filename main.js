@@ -6,6 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { createSandscapeBackground } from './sandscape-bg.js';
 
 // --- Feel / tuning -----------------------------------------------------------
 // The spin NEVER stops: a slow baseline creep that accelerates into a fast whirl
@@ -32,7 +33,9 @@ const DOUBLE_ROLL_OFFSET = 0.02;   // rad: keep the stacked cubes upright (cance
 
 const canvas = document.querySelector('#loader-canvas');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x030106);
+// The dune background scene paints the backdrop now, so the mark scene stays
+// transparent and composites on top of it (see the composer passes below).
+scene.background = null;
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -56,7 +59,18 @@ const renderTarget = new THREE.WebGLRenderTarget(1, 1, {
   samples: 4,
 });
 const composer = new EffectComposer(renderer, renderTarget);
-composer.addPass(new RenderPass(scene, camera));
+
+// Subtle 3D "sandscape" dune field, rendered behind the mark in its own
+// perspective scene so it reads with real depth and a soft horizon.
+const sandscape = createSandscapeBackground();
+composer.addPass(new RenderPass(sandscape.scene, sandscape.camera));
+
+// The mark composites on top of the dunes: keep the buffer (no color clear) but
+// give the mark a fresh depth range so it is never occluded by the terrain.
+const markPass = new RenderPass(scene, camera);
+markPass.clear = false;
+markPass.clearDepth = true;
+composer.addPass(markPass);
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -381,6 +395,8 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   elapsed += dt;
 
+  sandscape.update(elapsed); // slow wind-drift, independent of the mark's morph
+
   if (!dragging) {
     morphClock += dt * SEQUENCE_SPEED;
   }
@@ -494,6 +510,7 @@ function resize() {
   const height = window.innerHeight;
 
   const aspect = width / height;
+  sandscape.setAspect(aspect);
   const frustum = width < 700 ? 28.4 : cameraFrustum;
 
   camera.left = (-frustum * aspect) / 2;
