@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wireframe Cube Loader</title>
+    <title>Sandscape</title>
     <link rel="stylesheet" href="./style.css" />
     <script type="importmap">
       {
@@ -17,16 +17,6 @@
   <body>
     <canvas id="loader-canvas" aria-hidden="true"></canvas>
 
-    <!-- Loading readout. Driven by the engine via window.SandscapeLoader (see loader-ui.js). -->
-    <div id="loader-ui" role="status" aria-live="polite">
-      <div id="loading-label">Loading</div>
-      <div id="progress-box">
-        <div id="progress-fill"></div>
-      </div>
-      <div id="progress-percent" aria-hidden="true">0%</div>
-    </div>
-
     <script type="module" src="./main.js"></script>
-    <script src="./loader-ui.js"></script>
   </body>
 </html>

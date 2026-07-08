@@ -7,6 +7,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createSandscapeBackground } from './sandscape-bg.js';
+import { createSandscapeWord } from './sandscape-word.js';
 
 // --- Feel / tuning -----------------------------------------------------------
 // The spin NEVER stops: a slow baseline creep that accelerates into a fast whirl
@@ -122,6 +123,9 @@ const pickSphere = new THREE.Mesh(
 );
 pickSphere.position.y = MARK_OFFSET_Y;
 scene.add(pickSphere);
+
+// The "Sandscape" wordmark in 3D under the mark, gently rocking ±15°.
+const sandscapeWord = createSandscapeWord(scene, renderer);
 
 const calmDuration = 2;
 const morphDuration = 0.45;
@@ -396,6 +400,7 @@ function animate() {
   elapsed += dt;
 
   sandscape.update(elapsed); // slow wind-drift, independent of the mark's morph
+  sandscapeWord.update(elapsed); // gentle ±15° rock on the 3D wordmark
 
   if (!dragging) {
     morphClock += dt * SEQUENCE_SPEED;
